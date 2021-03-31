@@ -25,6 +25,8 @@
 3. webpack
 
 4. nuxt
+
+5. javaScript正则表达式迷你书
 ---
 
 - 第三阶段
