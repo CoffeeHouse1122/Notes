@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Simple DOM example</title>
+  </head>
+  <body>
+      <section>
+        <!-- qqqq -->
+        <img src="dinosaur.png" alt="A red Tyrannosaurus Rex: A two legged dinosaur standing upright like a human, with small arms, and a large head with lots of sharp teeth.">
+        <p>Here we will add a link to the <a href="https://www.mozilla.org/" style="visibility: hidden;">Mozilla homepage</a></p>
+      </section>
+      <script>
+        var body = document.querySelector('body');
+        // body.textContent 
+        var link = document.querySelector('a');
+        // link.remove();
+
+        console.log('body.textContent : ', body.textContent );
+        console.log('body.innerText : ', body.innerText );
+      </script>
+  </body>
+</html>
