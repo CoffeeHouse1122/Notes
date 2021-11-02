@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Simple DOM example</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas class="myCanvas">
+    <p>添加恰当的反馈信息。</p>
+  </canvas>
+  <script>
+    // 角度换算为弧度
+    function degToRad(degrees) {
+      return degrees * Math.PI / 180;
+    }
+
+    // 范围随机
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+
+    var canvas = document.querySelector('.myCanvas');
+    var width = canvas.width = window.innerWidth;
+    var height = canvas.height = window.innerHeight;
+    var ctx = canvas.getContext('2d');
+    console.log('ctx: ', ctx);
+    // 绘制黑色画布背景
+    ctx.fillStyle = 'rgb(0, 0, 0)';
+    ctx.fillRect(0, 0, width, height);
+
+    // // 绘制红色矩形
+    // ctx.fillStyle = 'rgb(255, 0, 0)';
+    // ctx.fillRect(50, 50, 100, 150);
+
+    // // 绘制绿色矩形
+    // ctx.fillStyle = 'rgb(0, 255, 0)';
+    // ctx.fillRect(75, 75, 100, 100);
+
+    // // 绘制半透明矩形
+    // ctx.fillStyle = 'rgba(255, 0, 255, 0.75)';
+    // ctx.fillRect(25, 100, 175, 50);
+
+    // // 描边
+    // ctx.strokeStyle = 'rgb(255, 255, 255)';
+    // ctx.lineWidth = 5;
+    // ctx.strokeRect(25, 25, 175, 200);
+
+    // 绘制路径 - 等边三角形
+    // ctx.fillStyle = 'rgb(255, 0, 0)';
+    // ctx.beginPath();
+    // ctx.moveTo(50, 50);
+    // ctx.lineTo(150, 50);
+    // var triHeight = 50 * Math.tan(degToRad(60));
+    // ctx.lineTo(100, 50+triHeight);
+    // ctx.lineTo(50, 50);
+    // ctx.fill();
+
+    // 画圆
+    // ctx.fillStyle = 'rgb(0, 0, 255)';
+    // ctx.beginPath();
+    // ctx.arc(200, 200, 50, degToRad(0), degToRad(360), false);
+    // ctx.fill();
+
+    // 画弧
+    // ctx.fillStyle = 'yellow';
+    // ctx.beginPath();
+    // ctx.arc(250, 200, 50, degToRad(-45), degToRad(45), true);
+    // ctx.lineTo(250, 200);
+    // ctx.fill();
+
+    // 文本
+    // ctx.strokeStyle = 'white';
+    // ctx.lineWidth = 2;
+    // ctx.font = '36px arial';
+    // ctx.strokeText('Canvas text', 300, 300);
+
+    // ctx.fillStyle = 'red';
+    // ctx.font= '36px arial';
+    // ctx.fillText('Canvas text', 300, 300);
+
+    // 绘制图片
+    // var image = new Image();
+    // image.src = 'images/2B.png';
+    // image.onload = function() {
+    //   ctx.drawImage(image, 0, 0, 1146, 1638, 200, 400, 230, 328);
+    // };
+
+    // 循环
+    // ctx.translate(width/2, height/2);
+    // var length = 250;
+    // var moveOffset= 1;
+    // for(var i = 0; i < length; i++) {
+    //   ctx.fillStyle = `rgba(${255-length}, 0, ${255-length}, 0.9)`;
+    //   ctx.beginPath();
+    //   ctx.moveTo(moveOffset, moveOffset);
+    //   ctx.lineTo(moveOffset+length, moveOffset);
+    //   var triHeight2 = length/2 * Math.tan(degToRad(60));
+    //   ctx.lineTo(moveOffset+(length/2), moveOffset+triHeight2);
+    //   ctx.lineTo(moveOffset, moveOffset);
+    //   ctx.fill();
+
+    //   length--;
+    //   moveOffset+=0.7;
+    //   ctx.rotate(degToRad(5));
+    // }
+
+    // 简单的人物动画
+    var img = new Image();
+    img.src = 'images/lucia-ani.png';
+    img.onload = draw;
+    var sprite = 0;
+    var posX = 0;
+
+    function draw() {
+      ctx.fillRect(0, 350, width, height);
+      ctx.drawImage(img, sprite * 110, 0, 110, 110, 0 + posX, 350, 110, 110);
+      if (posX % 12 === 0) {
+        if (sprite === 9) {
+          sprite = 0;
+        } else {
+          sprite++;
+        }
+      }
+      if (posX > width) {
+        var newStartPos = -120;
+        posX = Math.ceil(newStartPos / 12) * 12;
+      } else {
+        posX += 3;
+      }
+
+      window.requestAnimationFrame(draw);
+    }
+
+
+
+
+  </script>
+</body>
+
+</html>
