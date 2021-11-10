@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>元素跟随鼠标移动旋转</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+    }
+
+    .box {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      perspective: 500px;
+      background-color: #000;
+    }
+
+    .card {
+      display: block;
+      width: 200px;
+      height: 200px;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+    }
+
+    .card1 {
+      background-color: #FFF;
+      box-shadow: #fff 0px 0px 9px;
+      margin-top: -100px;
+      margin-left: -100px;
+    }
+
+    .card2 {
+      background-color: #e91e63;
+      box-shadow: #cc3939 0px 0px 9px;
+      margin-top: -60px;
+      margin-left: -60px;
+    }
+
+    .card3 {
+      background-color: #ff9800;
+      box-shadow: #9e9e9e 0px 0px 9px;
+      margin-top: -30px;
+      margin-left: -30px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="box">
+    <span class="card card1">111</span>
+    <span class="card card2">222</span>
+    <span class="card card3">333</span>
+  </div>
+  <script src="./js/gsap.min.js"></script>
+  <script>
+    const box = document.querySelector('.box');
+    const card = document.querySelectorAll('.card');
+    const moveCoefficient = 20;
+    const rotateCoefficient = 10;
+    let boxX = box.clientWidth;
+    let boxY = box.clientHeight;
+    document.addEventListener('mousemove', function (event) {
+      let moveX = [event.pageX - (boxX / 2)] / (boxX / 2) * moveCoefficient;
+      let moveY = [event.pageY - (boxY / 2)] / (boxY / 2) * moveCoefficient;
+      let rotateX = -(event.pageY - boxY / 2) / (boxY / 2) * rotateCoefficient;
+      let rotateY = (event.pageX - boxX / 2) / (boxX / 2) * rotateCoefficient;
+      gsap.to(card, 0.5, {
+        x: function (index, target) {
+          let x;
+          switch (index) {
+            case 0:
+              x = moveX * 1.8;
+              break
+            case 1:
+              x = moveX * 1.2;
+              break
+            case 2:
+              x = moveX * 2;
+              break
+          }
+          return x
+        },
+        y: function (index, target) {
+          let y;
+          switch (index) {
+            case 0:
+              y = moveY * 1.8;
+              break
+            case 1:
+              y = moveY * 1.2;
+              break
+            case 2:
+              y = moveY * 2;
+              break
+          }
+          return y
+        },
+        rotationX: rotateX,
+        rotationY: rotateY,
+        ease: Linear.ease,
+      },
+      )
+    });
+    // document.addEventListener('mouseout', function (event) {
+    //   gsap.to(card, 0.5, {
+    //     x: 0,
+    //     y: 0,
+    //     rotationX: 0,
+    //     rotationY: 0,
+    //     ease: Linear.ease,
+    //   },
+    //   )
+    // });
+
+  </script>
+</body>
+
+</html>
