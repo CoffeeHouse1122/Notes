@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id='canvas'></canvas>
+  <script>
+    // 范围随机
+    function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    const canvas = document.getElementById('canvas');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    let ctx = canvas.getContext('2d');
+    let count = 100; // 粒子数
+
+    // ctx.fillStyle = 'rgb(0, 0, 0)';
+    // ctx.fillRect(0, 0, width, height);
+
+    let particle = {
+      startX: rand(0, width),
+      startY: rand(height - 20, height),
+      startVx: 1,
+      startVy: -2,
+      x: rand(0, width),
+      y: rand(height - 20, height),
+      vx: 1,
+      vy: -2,
+      color: 'yellow',
+      draw: function () {
+        ctx.fillStyle = 'rgb(0, 0, 0)';
+        ctx.fillRect(0, 0, width, height);
+        ctx.shadowColor = "white";
+        ctx.shadowBlur = 10;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, 4, 4);
+      }
+    };
+    console.log('particle: ', particle);
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+      particle.draw();
+      if (particle.y <= 0 || particle.vx < 0.1) {
+        particle.y = particle.startY;
+        particle.x = particle.startX;
+        particle.vy = particle.startVy;
+        particle.vx = particle.startVx;
+      }
+      // particle.vx *= 0.99;
+      particle.vy *= 1.01;
+      // particle.x += particle.vx;
+      particle.y += particle.vy;
+      window.requestAnimationFrame(draw);
+    }
+
+    window.requestAnimationFrame(draw);
+
+    particle.draw();
+    // for (let i = 0; i < count; i++) {
+    //   ctx.fillStyle = '#fff';
+    //   ctx.fillRect(rand(0, width), rand(height - 20, height), 2, 2);
+    // }
+
+  </script>
+</body>
+
+</html>
