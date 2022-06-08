@@ -7,73 +7,148 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
   <style>
+    html {
+      width: 100%;
+      height: 100%;
+    }
+
     body {
+      width: 100%;
+      height: 100%;
+      background-color: #000;
       margin: 0;
       overflow: hidden;
+    }
+
+    #lightBox {
+      width: 100%;
+      height: 100%;
+    }
+
+    #c {
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
 
 <body>
-  <canvas id='canvas'></canvas>
+  <div id="lightBox">
+    <canvas id='c'></canvas>
+  </div>
+  <script src="./js/gsap.min.js"></script>
   <script>
-    // 范围随机
-    function rand(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-    const canvas = document.getElementById('canvas');
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
-    let ctx = canvas.getContext('2d');
-    let count = 100; // 粒子数
 
-    // ctx.fillStyle = 'rgb(0, 0, 0)';
-    // ctx.fillRect(0, 0, width, height);
+    class SingleParticle {
+      constructor(ctx, img) {
+        this.x = 0;
+        this.y = 0;
+        this.size = 1;
+        this.size = 1;
+        this.alpha = 0.8;
+        this.ease = "";
+        this.ctx = ctx;
+        this.img = img;
+      }
 
-    let particle = {
-      startX: rand(0, width),
-      startY: rand(height - 20, height),
-      startVx: 1,
-      startVy: -2,
-      x: rand(0, width),
-      y: rand(height - 20, height),
-      vx: 1,
-      vy: -2,
-      color: 'yellow',
-      draw: function () {
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        ctx.fillRect(0, 0, width, height);
-        ctx.shadowColor = "white";
-        ctx.shadowBlur = 10;
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, 4, 4);
+      draw() {
+        this.ctx.globalAlpha = this.alpha;
+        this.ctx.globalCompositeOperation = "lighter";
+        this.ctx.drawImage(this.img, this.x, this.y, this.size, this.size);
       }
-    };
-    console.log('particle: ', particle);
-    function draw() {
-      ctx.clearRect(0, 0, width, height);
-      particle.draw();
-      if (particle.y <= 0 || particle.vx < 0.1) {
-        particle.y = particle.startY;
-        particle.x = particle.startX;
-        particle.vy = particle.startVy;
-        particle.vx = particle.startVx;
-      }
-      // particle.vx *= 0.99;
-      particle.vy *= 1.01;
-      // particle.x += particle.vx;
-      particle.y += particle.vy;
-      window.requestAnimationFrame(draw);
+
     }
 
-    window.requestAnimationFrame(draw);
+    // totalNum 粒子数量 duration 运动时间 canvasEle canvas元素id imgSrc 图片地址
+    class Particles {
+      constructor(totalNum, duration, canvasEle, imgSrc) {
+        this.totalNum = totalNum;
+        this.duration = duration;
+        this.canvasEle = canvasEle;
+        this.imgSrc = imgSrc;
+        this.canvas = document.getElementById(canvasEle);
+        this.ctx = this.canvas.getContext("2d");
+        this.cw = (this.canvas.width = this.canvas.offsetWidth);
+        this.ch = (this.canvas.height = this.canvas.offsetHeight);
+        this.img = new Image();
+        this.img.src = imgSrc;
+        this.particles = [];
+        this.particleNumber = 0;
+      }
 
-    particle.draw();
-    // for (let i = 0; i < count; i++) {
-    //   ctx.fillStyle = '#fff';
-    //   ctx.fillRect(rand(0, width), rand(height - 20, height), 2, 2);
-    // }
+      rand(min = 0, max = 1) {
+        return min + (max - min) * Math.random();
+      }
 
+      initParticles() {
+        for (var i = 0; i < this.totalNum; i++) {
+          this.particles.push(new SingleParticle(this.ctx, this.img));
+          this.setParticle(this.particles[i]);
+        }
+      }
+
+      setParticle(p) {
+        this.particleNumber++;
+        let _size = this.rand(1, 5),
+          _dur = this.rand(this.duration, this.duration + _size / 10),
+          _tl = gsap.timeline();
+        _tl.fromTo(
+          p,
+          {
+            x: this.rand(0, this.cw),
+            y: this.ch,
+            size: _size,
+            alpha: 0.8
+          },
+          {
+            duration: _dur,
+            x: "+=" + this.rand(_size * -30, _size * 30),
+            y: -10,
+            size: 5,
+            alpha: 0.8,
+            ease: "sine",
+            onComplete: () => {
+              this.setParticle(p);
+            },
+          },
+          0
+        )
+        if (this.particleNumber < this.totalNum) {
+          _tl.seek(_dur * this.rand());
+        }
+      }
+
+      resize() {
+        window.addEventListener("resize", () => {
+          this.particleNumber = 0;
+          this.cw = (this.canvas.width = this.canvas.offsetWidth);
+          this.ch = (this.canvas.height = this.canvas.offsetHeight);
+          for (let i = 0; i < this.totalNum; i++) {
+            gsap.killTweensOf(this.particles[i]);
+            this.setParticle(this.particles[i]);
+          }
+        });
+      }
+
+      draw() {
+        gsap.ticker.add(() => {
+          this.ctx.clearRect(0, 0, this.cw, this.ch);
+          for (let i = 0; i < this.totalNum; i++) {
+            this.particles[i].draw();
+          }
+        });
+      }
+
+      init() {
+        this.initParticles();
+        this.resize();
+        this.draw();
+      }
+    }
+
+    let particles = new Particles(30, 10, "c", "./images/光点.png")
+
+    particles.init()
   </script>
 </body>
 
