@@ -59,6 +59,14 @@ module.exports = {
           filename: "json/[name].[hash][ext][query]",
         },
       },
+      {
+        test: /\.(glsl|vs|fs|vert|frag)$/,
+        exclude: /node_modules/,
+        type: "asset/source",
+        generator: {
+          filename: "shaders/[name].[hash][ext][query]",
+        },
+      },
     ],
   },
   optimization: {

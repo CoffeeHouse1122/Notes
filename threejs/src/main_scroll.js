@@ -40,10 +40,13 @@ const material = new THREE.MeshToonMaterial({
   gradientMap: gradientTexture,
 });
 
-// Meshes
+// Meshes 
 const objectsDistance = 4;
 
-const mesh1 = new THREE.Mesh(new THREE.TorusGeometry(1, 0.4, 16, 60), material);
+const mesh1 = new THREE.Mesh(
+  new THREE.TorusGeometry(1, 0.4, 16, 60),
+  material
+);
 const mesh2 = new THREE.Mesh(new THREE.ConeGeometry(1, 2, 32), material);
 const mesh3 = new THREE.Mesh(
   new THREE.TorusKnotGeometry(0.8, 0.35, 100, 16),
