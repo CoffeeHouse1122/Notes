@@ -22,6 +22,10 @@
 
 ## 版本、帮助与目标引擎
 
+- `--version` 查看客户端版本；`version` 同时尝试读取 Client 和 Server 版本。
+- `info` 查看引擎信息，需要能连接引擎；只有客户端正常不代表服务端可用。
+- `context show` 查看当前 Context，`context ls` 列出连接配置；带 `*` 的是当前选择。
+
 ```text
 docker --version
 docker version
@@ -32,26 +36,14 @@ docker context show
 docker context ls
 ```
 
-- `--version` 查看客户端版本；`version` 同时尝试读取 Client 和 Server 版本。
-- `info` 查看引擎信息，需要能连接引擎；只有客户端正常不代表服务端可用。
-- `context show` 查看当前 Context，`context ls` 列出连接配置；带 `*` 的是当前选择。
+以下命令中的 Context 名称仅为示例，必须已存在。`--context` 只为这次调用指定连接；`context use` 会改变后续命令默认使用的连接。使用远端引擎时尤其要核对操作目标。
 
 ```text
 docker --context production ps
 docker context use desktop-linux
 ```
 
-以上 Context 名称仅为示例，必须已存在。`--context` 只为这次调用指定连接；`context use` 会改变后续命令默认使用的连接。使用远端引擎时尤其要核对操作目标。
-
 ## 镜像查询与拉取
-
-```text
-docker images
-docker image ls --digests
-docker pull nginx:alpine
-docker image inspect my-api:1.0
-docker image history my-api:1.0
-```
 
 | 命令或参数 | 用途与条件 |
 | --- | --- |
@@ -63,13 +55,15 @@ docker image history my-api:1.0
 
 `nginx:alpine` 是公开镜像示例；标签可以指向新内容，并非永久固定版本。部署需要可追溯时记录版本及镜像 digest；省略标签通常使用 `latest`，它不保证对应语义上的最新稳定版。
 
-## 构建镜像
-
 ```text
-docker build -t my-api:1.0 .
-docker build -f docker/Dockerfile -t my-api:1.0 .
-docker build --pull --no-cache -t my-api:1.0 .
+docker images
+docker image ls --digests
+docker pull nginx:alpine
+docker image inspect my-api:1.0
+docker image history my-api:1.0
 ```
+
+## 构建镜像
 
 | 参数 | 含义 |
 | --- | --- |
@@ -85,11 +79,13 @@ docker build --pull --no-cache -t my-api:1.0 .
 
 参考：[构建命令](https://docs.docker.com/reference/cli/docker/image/build/)、[构建上下文](https://docs.docker.com/build/concepts/context/)。
 
-## 创建并运行容器
-
 ```text
-docker run -d --name api -p 127.0.0.1:8080:3000 --restart unless-stopped my-api:1.0
+docker build -t my-api:1.0 .
+docker build -f docker/Dockerfile -t my-api:1.0 .
+docker build --pull --no-cache -t my-api:1.0 .
 ```
+
+## 创建并运行容器
 
 条件：`my-api:1.0` 已存在或可拉取，`api` 名称未被其他容器占用，主机 `8080` 可绑定，镜像启动的应用在容器内监听 `0.0.0.0:3000` 等可从容器网络访问的地址。
 
@@ -109,19 +105,15 @@ docker run -d --name api -p 127.0.0.1:8080:3000 --restart unless-stopped my-api:
 | `-i`、`-t` | 分别保持标准输入打开、分配终端；交互常合写 `-it` |
 | `--rm` | 退出后移除容器及关联匿名卷，不移除具名卷；不能与重启策略同时使用 |
 
-容器依靠主进程持续运行：主进程退出，容器就停止。Dockerfile 中的 `EXPOSE` 不会自动向主机发布端口。容器内部只监听 `127.0.0.1` 的应用通常无法通过上述端口映射访问。
+容器依靠主进程持续运行：主进程退出，容器就停止。Dockerfile 中的 `EXPOSE` 不会自动向主机发布端口。容器内部只监听 `127.0.0.1` 的应用通常无法通过示例中的端口映射访问。
 
 参数以 [docker run 官方参考](https://docs.docker.com/reference/cli/docker/container/run/) 为准。
 
-## 查看容器与运行状态
-
 ```text
-docker ps
-docker ps -a
-docker ps --filter status=exited
-docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
-docker port api
+docker run -d --name api -p 127.0.0.1:8080:3000 --restart unless-stopped my-api:1.0
 ```
+
+## 查看容器与运行状态
 
 `-a` 包括停止的容器；`--filter` 筛选结果；`--format` 控制显示列，不改变容器。
 
@@ -135,14 +127,15 @@ docker port api
 | `127.0.0.1:8080->3000/tcp` | 主机地址和端口映射到容器端口 |
 | 单独的 `3000/tcp` | 不能据此认定端口已经发布到主机 |
 
-## 启动、停止、重启和删除
-
 ```text
-docker start api
-docker stop --timeout 30 api
-docker restart --timeout 30 api
-docker rm api
+docker ps
+docker ps -a
+docker ps --filter status=exited
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+docker port api
 ```
+
+## 启动、停止、重启和删除
 
 | 操作 | 使用条件及影响 |
 | --- | --- |
@@ -153,24 +146,20 @@ docker rm api
 | `rm` | 删除已停止容器，丢弃可写层；默认不删除具名卷 |
 
 ```text
+docker start api
+docker stop --timeout 30 api
+docker restart --timeout 30 api
+docker rm api
+```
+
+以下两条用于明确需要强制操作的场景：默认强制终止主进程，第二条还删除容器。可能中断写入或丢失未持久化内容，应先使用应用正常停机方式或 `stop`。Compose 管理的服务优先用 Compose 操作。
+
+```text
 docker kill api
 docker rm -f api
 ```
 
-上述两条用于明确需要强制操作的场景：默认强制终止主进程，第二条还删除容器。可能中断写入或丢失未持久化内容，应先使用应用正常停机方式或 `stop`。Compose 管理的服务优先用 Compose 操作。
-
 ## 日志、诊断与资源使用
-
-```text
-docker logs --tail 100 api
-docker logs -f --since 30m --timestamps api
-docker inspect api
-docker inspect --format "{{json .State}}" api
-docker stats --no-stream api
-docker top api
-docker system df
-docker system df -v
-```
 
 - `--tail 100` 限制末尾行数；`--since 30m` 查看最近半小时；`--timestamps` 显示时间戳；`-f` 持续跟踪，用 `Ctrl+C` 退出，不停止容器。
 - `logs` 主要读取容器标准输出和标准错误，结果还受日志驱动和保留策略影响。应用只写内部文件时，不能假设日志会出现在这里。
@@ -183,13 +172,18 @@ docker system df -v
 
 参考：[日志命令](https://docs.docker.com/reference/cli/docker/container/logs/)。
 
-## 在容器内执行命令
-
 ```text
-docker exec -it api sh
-docker exec api node --version
-docker exec -w /app api ls -la
+docker logs --tail 100 api
+docker logs -f --since 30m --timestamps api
+docker inspect api
+docker inspect --format "{{json .State}}" api
+docker stats --no-stream api
+docker top api
+docker system df
+docker system df -v
 ```
+
+## 在容器内执行命令
 
 `exec` 在已有运行中容器启动一个额外进程。`-w` 设置此次命令的容器内工作目录，`-u 用户或UID` 可指定执行身份；命令及其依赖必须存在于镜像中。
 
@@ -199,18 +193,26 @@ docker exec -w /app api ls -la
 
 参考：[exec 命令](https://docs.docker.com/reference/cli/docker/container/exec/)。
 
+```text
+docker exec -it api sh
+docker exec api node --version
+docker exec -w /app api ls -la
+```
+
 ## 文件复制
+
+以下命令中，第一条从容器复制到本地，第二条反向复制；命令左右两侧决定方向。源文件和目标父目录需存在，复制可能覆盖目标文件，运行或停止的容器都可以使用。
+
+直接复制配置不会自动触发应用重载，写到容器可写层的修改也不会进入原镜像。正式配置应通过镜像构建或挂载维护；复制仍在写入的数据库文件不保证备份一致。
 
 ```text
 docker cp api:/app/logs/error.log ./error.log
 docker cp ./config.json api:/app/config.json
 ```
 
-第一条从容器复制到本地，第二条反向复制；命令左右两侧决定方向。源文件和目标父目录需存在，复制可能覆盖目标文件，运行或停止的容器都可以使用。
-
-直接复制配置不会自动触发应用重载，写到容器可写层的修改也不会进入原镜像。正式配置应通过镜像构建或挂载维护；复制仍在写入的数据库文件不保证备份一致。
-
 ## 数据卷与绑定挂载
+
+具名卷 `app-data` 由 Docker 管理，容器删除后可继续保留；应用必须实际把需要持久化的数据写到 `/app/data`，并拥有读写权限。卷不是自动备份，存储在别处的数据仍可能丢失。
 
 ```text
 docker volume ls
@@ -219,21 +221,7 @@ docker volume inspect app-data
 docker run -d --name api-data --mount type=volume,source=app-data,target=/app/data my-api:1.0
 ```
 
-具名卷 `app-data` 由 Docker 管理，容器删除后可继续保留；应用必须实际把需要持久化的数据写到 `/app/data`，并拥有读写权限。卷不是自动备份，存储在别处的数据仍可能丢失。
-
-以下绑定挂载命令是不同主机环境的备选写法；执行前确认源目录存在：
-
-```bash
-docker run -d --name web-files --mount type=bind,source=/srv/site,target=/usr/share/nginx/html,readonly nginx:alpine
-```
-
-Linux 主机将 `/srv/site` 只读映射到容器网页目录。
-
-```powershell
-docker run -d --name web-files --mount "type=bind,source=F:\Sites\demo,target=/usr/share/nginx/html,readonly" nginx:alpine
-```
-
-Windows Docker Desktop 场景使用实际 Windows 路径，并需允许 Docker 访问源目录。
+以下绑定挂载命令是不同主机环境的备选写法；执行前确认源目录存在。
 
 | 选项 | 说明 |
 | --- | --- |
@@ -246,7 +234,25 @@ Windows Docker Desktop 场景使用实际 Windows 路径，并需允许 Docker �
 
 参考：[数据卷](https://docs.docker.com/engine/storage/volumes/)、[绑定挂载](https://docs.docker.com/engine/storage/bind-mounts/)。
 
+Linux 主机将 `/srv/site` 只读映射到容器网页目录。
+
+```bash
+docker run -d --name web-files --mount type=bind,source=/srv/site,target=/usr/share/nginx/html,readonly nginx:alpine
+```
+
+Windows Docker Desktop 场景使用实际 Windows 路径，并需允许 Docker 访问源目录。
+
+```powershell
+docker run -d --name web-files --mount "type=bind,source=F:\Sites\demo,target=/usr/share/nginx/html,readonly" nginx:alpine
+```
+
 ## 网络与端口
+
+`create` 默认创建本机用户定义的 bridge 网络；`connect` 把已有容器加入网络，`disconnect` 会中断对应网络连接。同一用户定义网络中的容器通常可按容器名或网络别名访问。
+
+容器访问另一个容器时使用目标容器名和容器端口，例如 `redis:6379`；容器里的 `localhost` 默认指自己。`-p` 用于从主机外部或主机访问容器，不是同一网络中容器互访的必要条件。
+
+`host.docker.internal` 常用于 Docker Desktop 中容器访问主机服务，不能假设所有原生 Linux 环境默认提供同名解析。
 
 ```text
 docker network ls
@@ -256,13 +262,13 @@ docker network connect app-net api
 docker network disconnect app-net api
 ```
 
-`create` 默认创建本机用户定义的 bridge 网络；`connect` 把已有容器加入网络，`disconnect` 会中断对应网络连接。同一用户定义网络中的容器通常可按容器名或网络别名访问。
-
-容器访问另一个容器时使用目标容器名和容器端口，例如 `redis:6379`；容器里的 `localhost` 默认指自己。`-p` 用于从主机外部或主机访问容器，不是同一网络中容器互访的必要条件。
-
-`host.docker.internal` 常用于 Docker Desktop 中容器访问主机服务，不能假设所有原生 Linux 环境默认提供同名解析。
-
 ## 仓库登录与推送
+
+仓库地址和命名空间需替换，推送前确保目标仓库和权限正确。`tag` 增加镜像引用，不会重新构建镜像；`push` 会上传镜像供有权限的人拉取，推送前确认镜像未包含秘密文件。
+
+登录凭据的保存取决于凭据助手配置。自动化可使用 `--password-stdin` 从可信秘密来源读取令牌，避免把密码作为命令行参数或写入提交文件。
+
+参考：[登录命令](https://docs.docker.com/reference/cli/docker/login/)。
 
 ```text
 docker login registry.example.com
@@ -271,24 +277,18 @@ docker push registry.example.com/team/my-api:1.0
 docker logout registry.example.com
 ```
 
-仓库地址和命名空间需替换，推送前确保目标仓库和权限正确。`tag` 增加镜像引用，不会重新构建镜像；`push` 会上传镜像供有权限的人拉取，推送前确认镜像未包含秘密文件。
-
-登录凭据的保存取决于凭据助手配置。自动化可使用 `--password-stdin` 从可信秘密来源读取令牌，避免把密码作为命令行参数或写入提交文件。
-
-参考：[登录命令](https://docs.docker.com/reference/cli/docker/login/)。
-
 ## 镜像保存与加载
-
-```text
-docker save -o my-api-1.0.tar my-api:1.0
-docker load -i my-api-1.0.tar
-```
 
 `-o` 指定归档输出文件，`-i` 指定输入文件；输出位置需要空间与写权限。使用工具参数可避免不同 Shell 的二进制重定向差异。
 
 镜像归档不包含运行容器的新写入、数据卷或部署配置。`docker export/import` 操作容器文件系统快照，不能代替保留镜像层与配置的 `save/load`；数据库备份应使用数据库自身支持的一致性备份方式。
 
 参考：[save 命令](https://docs.docker.com/reference/cli/docker/image/save/)。
+
+```text
+docker save -o my-api-1.0.tar my-api:1.0
+docker load -i my-api-1.0.tar
+```
 
 ## 清理资源
 
