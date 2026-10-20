@@ -37,7 +37,7 @@
 | 系统管理与基础工具 | `ls`、`ps`、`systemctl`、`Get-Process` | 放在对应系统文档，并注明适用环境 |
 | 独立软件工具 | Docker、Git、Python、MySQL | 完整说明放在独立专题目录 |
 
-Docker 的 `docker` 是客户端工具，可从不同 Shell 调用；管理容器还需要连接可用的 Docker 引擎。建议 Docker 文档放在与本目录同级的 `docker/` 中，分别整理常用命令、Compose 和部署说明。现有 `../git/`、`../mysql/` 也是独立专题目录。
+Docker 的 `docker` 是客户端工具，可从不同 Shell 调用；管理容器还需要连接可用的 Docker 引擎。Docker 和 Docker Compose 文档已整理到 [软件工具命令](../软件工具命令/README.md)，按软件区分管理操作。现有 `../git/`、`../mysql/` 也是独立专题目录。
 
 本目录中的 Git、Python 内容仅保留常用调用方式和虚拟环境激活等 Shell 差异，不作为这些工具的完整教程。
 
