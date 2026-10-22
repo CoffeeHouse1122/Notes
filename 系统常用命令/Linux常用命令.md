@@ -731,16 +731,153 @@ vim /path/to/config.conf
 
 ## 远程连接与文件传输
 
-需要本机安装相应客户端，远端开放 SSH、允许该用户登录并具有目标目录权限。SSH 的端口选项是小写 `-p`，SCP 是大写 `-P`。首次连接时应核对服务器主机密钥指纹。
+需要本机安装相应客户端，远端开放 SSH、允许该用户登录并具有目标目录权限。
 
-`scp` 示例从本地上传到远端；反向下载可将远端路径放在前面、本地目标放在后面。`rsync` 的 `--dry-run` 只预览，确认结果后去掉该选项才真正同步；`./dist/` 的末尾斜杠表示同步目录内容。此示例不删除远端多余文件，也不自动重启服务，通常需要远端安装 `rsync`。
+### 连接与免密登录
+
+登录远端主机。SSH 的端口选项是小写 `-p`，`scp`、`sftp` 是大写 `-P`。
 
 ```bash
 ssh user@server.example.com
 ssh -p 2222 user@server.example.com
-scp -P 2222 ./app.tar.gz user@server.example.com:/srv/uploads/
-rsync -av --dry-run ./dist/ user@server.example.com:/srv/app/
 ```
+
+执行一条或多条命令后返回，不进入交互界面；远程命令需要终端时加 `-t`，部分 `sudo` 配置和交互式程序依赖终端。
+
+```bash
+ssh user@server.example.com 'df -h; uptime'
+ssh -t user@server.example.com 'sudo systemctl restart nginx'
+```
+
+首次连接应先核对主机密钥指纹，不一致时停下来确认。指纹记录在 `known_hosts`；服务器确认重装后可删除旧记录，非默认端口要写成 `[主机]:端口`。
+
+```bash
+ssh-keygen -R server.example.com
+ssh-keygen -R '[server.example.com]:2222'
+```
+
+生成一对密钥，默认写入 `~/.ssh/id_ed25519` 及同名 `.pub`；`ssh-copy-id` 把公钥追加到远端的 `authorized_keys`，只生成密钥不等于能免密登录。
+
+```bash
+ssh-keygen -t ed25519 -C "work laptop"
+ssh-copy-id -i ~/.ssh/id_ed25519.pub -p 2222 user@server.example.com
+```
+
+私钥需要仅本人可读。远端 `authorized_keys` 若可被组或其他用户写入，`sshd` 会拒绝使用该公钥；客户端提示 `WARNING: UNPROTECTED PRIVATE KEY FILE` 表示私钥权限过宽。
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/id_ed25519
+```
+
+带口令的私钥可用 agent 缓存，避免每次输入；`ssh-add -l` 列出已载入的密钥。
+
+```bash
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+```
+
+### 客户端配置与端口转发
+
+把主机、用户、端口和私钥写进 `~/.ssh/config` 后，`ssh`、`scp`、`rsync` 都可直接使用别名。该文件权限建议 `600`，配置自上而下取首个匹配项，`Host *` 通配块放在末尾；`IdentityFile` 配合 `IdentitiesOnly` 可避免把 agent 内的密钥逐个尝试。
+
+```
+Host prod
+  HostName server.example.com
+  User deploy
+  Port 2222
+  IdentityFile ~/.ssh/id_ed25519
+  IdentitiesOnly yes
+
+Host target
+  HostName 10.0.0.21
+  User user
+  ProxyJump jump@bastion.example.com
+
+Host *
+  ServerAliveInterval 30
+  ServerAliveCountMax 3
+```
+
+配置不生效时用 `-G` 查看合并默认值后的最终配置，比反复读文件快。
+
+```bash
+ssh prod
+ssh -G prod | grep -Ei '^(hostname|user|port|identityfile|proxyjump) '
+```
+
+`-L` 把本机端口转发到服务器视角的地址，常用于访问只监听 `127.0.0.1` 或位于内网的服务；`-N` 表示不执行远程命令，加 `-f` 可转到后台。该端口默认只监听本机回环地址，其他主机连不上是预期行为。
+
+```bash
+ssh -N -L 8080:127.0.0.1:80 user@server.example.com
+```
+
+`-R` 方向相反，把服务器端口转发到本机，可用于让远端临时访问本机服务。
+
+```bash
+ssh -N -R 9000:127.0.0.1:3000 user@server.example.com
+```
+
+跳板机用 `-J`，优于把私钥复制到跳板机，且不需要在跳板机上留文件；`-J` 需要 OpenSSH 7.3 及以上。
+
+```bash
+ssh -J jump@bastion.example.com user@10.0.0.21
+```
+
+### 传输文件
+
+`scp` 从本地上传到远端；反向下载把远端路径放在前面、本地目标放在后面，目标目录必须存在。
+
+```bash
+scp -P 2222 ./app.tar.gz user@server.example.com:/srv/uploads/
+scp -P 2222 user@server.example.com:/srv/app/app.log ./
+```
+
+`rsync` 按差异传输，适合目录同步；`--dry-run` 只预览，确认结果后去掉该选项才真正同步；`./dist/` 的末尾斜杠表示同步目录内容。此示例不删除远端多余文件，也不自动重启服务，通常需要远端安装 `rsync`。
+
+```bash
+rsync -avz --dry-run ./dist/ user@server.example.com:/srv/app/
+```
+
+### 断线与长任务
+
+上述 `ServerAliveInterval` 只让客户端尽早发现断线，不能阻止断线。SSH 断开时远程进程通常收到 `SIGHUP`，长任务应交给 `nohup` 或 `tmux`，不要依赖连接保持。
+
+```bash
+nohup ./job.sh > job.log 2>&1 &
+tmux new -s work
+```
+
+### 服务端排查
+
+Debian/Ubuntu 的 sshd 服务单元名是 `ssh`，RHEL 系是 `sshd`，按发行版选择；`journalctl` 读取失败登录可能需要 `adm` 或 `systemd-journal` 组权限。
+
+```bash
+systemctl status ssh
+journalctl -u ssh -n 50 --no-pager
+```
+
+修改 `/etc/ssh/sshd_config` 前先备份，用 `-t` 检查语法，通过后再 reload；较新版本还会通过 `Include` 加载 `sshd_config.d/*.conf`，主文件改了不生效时先检查这里。
+
+```bash
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$(date +%F)
+sudo sshd -t
+sudo systemctl reload ssh
+```
+
+修改端口或关闭密码登录前，保留当前已登录会话不要退出，另开窗口用新配置验证能登录后再退出，否则可能把自己锁在服务器外。
+
+认证失败与连接失败要分开看，客户端加 `-v` 能看出卡在哪一步、尝试了哪些密钥。
+
+```bash
+ssh -v user@server.example.com
+```
+
+| 现象 | 常见原因 |
+| --- | --- |
+| `Permission denied (publickey)` | 公钥未追加、私钥权限过宽、用户名错误或 agent 未载入密钥 |
+| `Host key verification failed` / `HOST IDENTIFICATION HAS CHANGED` | 服务器重装或 IP 被复用，也可能是中间人；核实前不要删除旧记录 |
+| `Too many authentication failures` | agent 内密钥过多，超过 `MaxAuthTries`；指定 `IdentityFile` 并启用 `IdentitiesOnly` |
 
 ## Bash 脚本基础
 
